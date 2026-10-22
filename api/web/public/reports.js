@@ -42,6 +42,9 @@
   document.addEventListener('change', function (event) {
     var input = event.target;
     if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    // Elm owns the student-photo preview and its file selection state.
+    // Inserting siblings here corrupts its virtual DOM child positions.
+    if (input.id === 'client-photo-file') return;
     var file = input.files && input.files[0];
     var old = uploads.get(input);
     if (old) { URL.revokeObjectURL(old); uploads.delete(input); }
