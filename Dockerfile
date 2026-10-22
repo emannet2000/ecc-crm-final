@@ -31,6 +31,7 @@ COPY api/src ./src
 COPY api/migrations ./migrations
 COPY api/test ./test
 COPY api/scripts/*.py api/scripts/*.cjs api/scripts/*.sh api/scripts/*.txt ./scripts/
+RUN chmod +x scripts/chromium-ci.sh
 COPY api/deploy ./deploy
 COPY api/docs ./docs
 COPY api/web/elm.json ./web/elm.json
@@ -39,7 +40,7 @@ COPY api/web/public ./web/public
 RUN python3 -m venv /opt/ecc-tests \
  && /opt/ecc-tests/bin/pip install --no-cache-dir -r scripts/requirements.txt
 ENV PATH="/opt/ecc-tests/bin:${PATH}" \
-    CHROME_PATH=/usr/bin/chromium \
+    CHROME_PATH=/src/api/scripts/chromium-ci.sh \
     ELM_BIN=/usr/local/bin/elm \
     PG_DUMP_BIN=/usr/lib/postgresql/17/bin/pg_dump \
     PG_RESTORE_BIN=/usr/lib/postgresql/17/bin/pg_restore
