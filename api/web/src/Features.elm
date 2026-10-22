@@ -526,6 +526,9 @@ clientPhotoCard model cid =
         , if writable then div [class "form-group"]
             [ label [for "client-photo-file"] [text "Student profile photo"]
             , input [id "client-photo-file",type_ "file",accept "image/png,image/jpeg",disabled model.clientPhotoBusy,Html.Events.on "change" (D.map ClientPhotoPicked (D.at ["target","files"] (D.index 0 File.decoder)))] []
+            , case model.clientPhotoPreview of
+                Just url -> button [type_ "button",class "selected-photo-preview photo-preview-trigger",attribute "aria-label" "Preview selected picture"] [img [src url,alt "Selected picture preview"] []]
+                Nothing -> text ""
             , p [] [text (Maybe.map File.name model.clientPhotoFile |> Maybe.withDefault "No replacement photo selected")]
             , button [class "btn btn-primary",disabled (model.clientPhotoBusy || model.clientPhotoFile==Nothing),onClick (ClientPhotoUpload cid)] [text (if model.clientPhotoBusy then "Uploading…" else "Upload photo")]
             ] else text ""

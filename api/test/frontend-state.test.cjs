@@ -33,7 +33,7 @@ try {
     refreshClock:$author$project$State$ClockRefreshRequested,posix:$elm$time$Time$millisToPosix,
     clientProfile:$author$project$State$ClientProfileLoaded,clientLoaded:$author$project$State$ClientDetailLoaded,
     routeCmd:$author$project$Main$routeCmd,clientRoute:$author$project$State$ClientDetailPage,
-    clientPhoto:$author$project$State$ClientPhotoUpload,clientPhotoDone:$author$project$State$ClientPhotoDone,photoRefresh:$author$project$State$ClientProfileRefresh,
+    clientPhoto:$author$project$State$ClientPhotoUpload,clientPhotoDone:$author$project$State$ClientPhotoDone,photoRefresh:$author$project$State$ClientProfileRefresh,photoPicked:$author$project$State$ClientPhotoPicked,photoPreview:$author$project$State$ClientPhotoPreviewReady,
     convertClient:$author$project$State$ConvertClicked,convertDone:$author$project$State$ConvertDone,
     validation:$author$project$Validation$feature,passwordError:$author$project$Validation$passwordError,
     emptyDict:$elm$core$Dict$empty,dict:$elm$core$Dict$fromList,
@@ -378,6 +378,23 @@ try {
     assert.equal(failed.clientPhotoBusy,false);
     assert.equal(failed.clientPhotoFile,original.clientPhotoFile);
     assert.match(failed.clientPhotoError,/PNG or JPEG/);
+  });
+  test('selected photo preview follows accepted files and ignores late readers',()=>{
+    const first={name:'first.png',type:'image/png',size:100};
+    const second={name:'second.jpg',type:'image/jpeg',size:200};
+    const chosen=update(e.photoPicked(first),initial('/clients/4'));
+    assert.equal(chosen.clientPhotoFile.a,first);
+    const shown=update(e.A2(e.photoPreview,first,'data:image/png;base64,AA=='),chosen);
+    assert.equal(shown.clientPhotoPreview.a,'data:image/png;base64,AA==');
+    const replaced=update(e.photoPicked(second),shown);
+    assert.equal(replaced.clientPhotoPreview.$,'Nothing');
+    assert.deepEqual(update(e.A2(e.photoPreview,first,'old'),replaced),replaced);
+    const invalid=update(e.photoPicked({type:'image/gif',size:100}),shown);
+    assert.equal(invalid.clientPhotoFile.$,'Nothing');
+    assert.equal(invalid.clientPhotoPreview.$,'Nothing');
+    const complete=update(e.A2(e.clientPhotoDone,4,e.ok(e.json({message:'Saved'}))),shown);
+    assert.equal(complete.clientPhotoPreview.$,'Nothing');
+    assert.deepEqual(update(e.A2(e.photoPreview,first,'late'),complete),complete);
   });
   test('photo upload completion survives unrelated panel search and preserves drafts',()=>{
     const original={...initial('/clients/4'),clientPhotoFile:{$:'Just',a:{}}};

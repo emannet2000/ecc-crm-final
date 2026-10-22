@@ -397,6 +397,7 @@ clearDraftInputs model =
         , pwConfirm = empty.pwConfirm
         , pendingDoc = empty.pendingDoc
         , pendingImport = empty.pendingImport
+        , clientPhotoPreview = empty.clientPhotoPreview
         , clientPhotoFile = empty.clientPhotoFile
         , checklistFile = empty.checklistFile
         , financeFile = empty.financeFile
@@ -454,7 +455,7 @@ updateCore msg model =
                     draft = captureSessionDraft model
                     cleared = clearDraftInputs model
                 in
-                ( { cleared | sessionDraft = draft, user = Nothing, token = Nothing, authChecked = True, clientProfile = E.null, clientPhotoFile = Nothing, clientPhotoBusy = False, clientPhotoNotice = "", clientPhotoError = "", formDirty = False, editingTask = False, portalBusy = False, documentBusy = False, photoEpoch = model.photoEpoch + 1, loadEpoch = model.loadEpoch + 1, userEpoch = model.userEpoch + 1, loginError = "Your session has expired. Please sign in again.", loginNotice = if draft /= Nothing then "Your unsaved text is held in this tab. Sign in to the same account to recover it. Re-select any attachments." else "", loginPassword = "", loginOtp = "", featureData = E.null, financeCandidates = [], financeFile = Nothing, financeCandidateQuery = "", financeCandidateOffset = 0, featureResult = E.null, reportSettings = Dict.empty, featureForm = Dict.empty, portalData = E.null, portalFile = Nothing, conflictCurrent = E.null, featureBaseline = Dict.empty, conflictOriginal = Dict.empty, conflictEdits = Dict.empty, recordBaseline = E.null, checklistFile = Nothing, featureBusy = False, detail = Nothing, clientDetail = Nothing, leads = [], clients = [], tasks = [], users = [], opsData = [], audit = [] }, saveToken Nothing )
+                ( { cleared | sessionDraft = draft, user = Nothing, token = Nothing, authChecked = True, clientProfile = E.null, clientPhotoFile = Nothing, clientPhotoPreview = Nothing, clientPhotoBusy = False, clientPhotoNotice = "", clientPhotoError = "", formDirty = False, editingTask = False, portalBusy = False, documentBusy = False, photoEpoch = model.photoEpoch + 1, loadEpoch = model.loadEpoch + 1, userEpoch = model.userEpoch + 1, loginError = "Your session has expired. Please sign in again.", loginNotice = if draft /= Nothing then "Your unsaved text is held in this tab. Sign in to the same account to recover it. Re-select any attachments." else "", loginPassword = "", loginOtp = "", featureData = E.null, financeCandidates = [], financeFile = Nothing, financeCandidateQuery = "", financeCandidateOffset = 0, featureResult = E.null, reportSettings = Dict.empty, featureForm = Dict.empty, portalData = E.null, portalFile = Nothing, conflictCurrent = E.null, featureBaseline = Dict.empty, conflictOriginal = Dict.empty, conflictEdits = Dict.empty, recordBaseline = E.null, checklistFile = Nothing, featureBusy = False, detail = Nothing, clientDetail = Nothing, leads = [], clients = [], tasks = [], users = [], opsData = [], audit = [] }, saveToken Nothing )
             else
                 updateHelp msg { model | photoEpoch = model.photoEpoch + (if startsPhotoLoad msg then 1 else 0), loadEpoch = model.loadEpoch + (if startsLoad msg then 1 else 0), userEpoch = model.userEpoch + (if startsUserLoad msg then 1 else 0) }
 
@@ -749,7 +750,7 @@ updateHelp msg model =
             ( { model | featureForm = model.featureForm |> Dict.insert "match" (Features.str "value" value) |> Dict.insert "matchLabel" (Features.str "label" value), formDirty = True }, Cmd.none )
 
         DiscardChanges action ->
-            update action { model | formDirty = False, confirmation = Nothing, noteDraft = "", pendingDoc = Nothing, checklistFile = Nothing, clientPhotoFile = Nothing, financeFile = Nothing, pendingImport = Nothing, sessionDraft = Nothing }
+            update action { model | formDirty = False, confirmation = Nothing, noteDraft = "", pendingDoc = Nothing, checklistFile = Nothing, clientPhotoFile = Nothing, clientPhotoPreview = Nothing, financeFile = Nothing, pendingImport = Nothing, sessionDraft = Nothing }
 
         EditTask task ->
             let
@@ -884,7 +885,7 @@ updateHelp msg model =
         LogoutDone result ->
             let cleared = clearDraftInputs model in
             case result of
-                Ok _ -> ( { cleared | sessionDraft = Nothing, user = Nothing, token = Nothing, authChecked = True, clientProfile = E.null, clientPhotoFile = Nothing, clientPhotoBusy = False, clientPhotoNotice = "", clientPhotoError = "", formDirty = False, editingTask = False, portalBusy = False, documentBusy = False, loginPassword = "", loginOtp = "", featureData = E.null, financeCandidates = [], financeFile = Nothing, financeCandidateQuery = "", financeCandidateOffset = 0, featureResult = E.null, reportSettings = Dict.empty, featureForm = Dict.empty, portalData = E.null, portalFile = Nothing, conflictCurrent = E.null, featureBaseline = Dict.empty, conflictOriginal = Dict.empty, conflictEdits = Dict.empty, recordBaseline = E.null, checklistFile = Nothing, featureBusy = False, detail = Nothing, clientDetail = Nothing, leads = [], clients = [], tasks = [], users = [], audit = [], opsData = [] }, Cmd.batch [ saveToken Nothing, Nav.pushUrl model.key "/" ] )
+                Ok _ -> ( { cleared | sessionDraft = Nothing, user = Nothing, token = Nothing, authChecked = True, clientProfile = E.null, clientPhotoFile = Nothing, clientPhotoPreview = Nothing, clientPhotoBusy = False, clientPhotoNotice = "", clientPhotoError = "", formDirty = False, editingTask = False, portalBusy = False, documentBusy = False, loginPassword = "", loginOtp = "", featureData = E.null, financeCandidates = [], financeFile = Nothing, financeCandidateQuery = "", financeCandidateOffset = 0, featureResult = E.null, reportSettings = Dict.empty, featureForm = Dict.empty, portalData = E.null, portalFile = Nothing, conflictCurrent = E.null, featureBaseline = Dict.empty, conflictOriginal = Dict.empty, conflictEdits = Dict.empty, recordBaseline = E.null, checklistFile = Nothing, featureBusy = False, detail = Nothing, clientDetail = Nothing, leads = [], clients = [], tasks = [], users = [], audit = [], opsData = [] }, Cmd.batch [ saveToken Nothing, Nav.pushUrl model.key "/" ] )
                 Err err -> ( model, toast "error" (httpError err) )
 
         PageStep step ->
@@ -930,7 +931,7 @@ updateHelp msg model =
                         , formDirty = False
                         , editingTask = False
                         , clientProfile = E.null
-                        , clientPhotoFile = Nothing
+                        , clientPhotoFile = Nothing, clientPhotoPreview = Nothing
                         , clientPhotoBusy = False
                         , clientPhotoNotice = ""
                         , clientPhotoError = ""
@@ -1197,9 +1198,15 @@ updateHelp msg model =
 
         ClientPhotoPicked file ->
             if File.size file <= 0 || File.size file > 2 * 1024 * 1024 || not (List.member (File.mime file) ["image/jpeg","image/png"]) then
-                ( { model | clientPhotoFile = Nothing, clientPhotoError = "Choose a PNG or JPEG up to 2 MB and 4096 × 4096 pixels." }, Cmd.none )
+                ( { model | clientPhotoFile = Nothing, clientPhotoPreview = Nothing, clientPhotoError = "Choose a PNG or JPEG up to 2 MB and 4096 × 4096 pixels." }, Cmd.none )
             else
-                ( { model | clientPhotoFile = Just file, clientPhotoError = "", clientPhotoNotice = "" }, Cmd.none )
+                ( { model | clientPhotoFile = Just file, clientPhotoPreview = Nothing, clientPhotoError = "", clientPhotoNotice = "" }, Task.perform (ClientPhotoPreviewReady file) (File.toUrl file) )
+
+        ClientPhotoPreviewReady file url ->
+            if model.clientPhotoFile == Just file then
+                ( { model | clientPhotoPreview = Just url }, Cmd.none )
+            else
+                ( model, Cmd.none )
 
         ClientPhotoUpload cid ->
             case model.clientPhotoFile of
@@ -1211,7 +1218,7 @@ updateHelp msg model =
         ClientPhotoDone cid result ->
             case result of
                 Ok value ->
-                    ( { model | clientPhotoBusy = False, clientPhotoFile = Nothing, clientPhotoNotice = Features.str "message" value }, Api.clientProfile ctx cid (acceptLoad model ClientProfileLoaded) )
+                    ( { model | clientPhotoBusy = False, clientPhotoFile = Nothing, clientPhotoPreview = Nothing, clientPhotoNotice = Features.str "message" value }, Api.clientProfile ctx cid (acceptLoad model ClientProfileLoaded) )
                 Err err ->
                     ( { model | clientPhotoBusy = False, clientPhotoError = if err == Http.BadStatus 400 then "Use a valid PNG or JPEG up to 2 MB and 4096 × 4096 pixels." else httpError err }, Cmd.none )
 

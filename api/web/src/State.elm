@@ -336,6 +336,7 @@ type alias Model =
     , editingTask : Bool
     , documentBusy : Bool
     , clientProfile : D.Value
+    , clientPhotoPreview : Maybe String
     , clientPhotoFile : Maybe File
     , photoEpoch : Int
     , clientPhotoBusy : Bool
@@ -463,6 +464,7 @@ initialModel key url =
     , editingTask = False
     , documentBusy = False
     , clientProfile = E.null
+    , clientPhotoPreview = Nothing
     , clientPhotoFile = Nothing
     , photoEpoch = 0
     , clientPhotoBusy = False
@@ -644,6 +646,7 @@ type Msg
     | AdvanceDone (Result Http.Error Lead)
     | ClientProfileLoaded (Result Http.Error D.Value)
     | ClientPhotoPicked File
+    | ClientPhotoPreviewReady File String
     | ClientPhotoUpload Int
     | ClientPhotoDone Int (Result Http.Error D.Value)
     | ClientProfileRefresh Int
