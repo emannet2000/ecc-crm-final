@@ -337,6 +337,7 @@ type alias Model =
     , documentBusy : Bool
     , clientProfile : D.Value
     , clientPhotoFile : Maybe File
+    , photoEpoch : Int
     , clientPhotoBusy : Bool
     , clientPhotoNotice : String
     , clientPhotoError : String
@@ -463,6 +464,7 @@ initialModel key url =
     , documentBusy = False
     , clientProfile = E.null
     , clientPhotoFile = Nothing
+    , photoEpoch = 0
     , clientPhotoBusy = False
     , clientPhotoNotice = ""
     , clientPhotoError = ""

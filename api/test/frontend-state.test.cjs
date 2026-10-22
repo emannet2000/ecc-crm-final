@@ -33,7 +33,7 @@ try {
     refreshClock:$author$project$State$ClockRefreshRequested,posix:$elm$time$Time$millisToPosix,
     clientProfile:$author$project$State$ClientProfileLoaded,clientLoaded:$author$project$State$ClientDetailLoaded,
     routeCmd:$author$project$Main$routeCmd,clientRoute:$author$project$State$ClientDetailPage,
-    clientPhoto:$author$project$State$ClientPhotoUpload,clientPhotoDone:$author$project$State$ClientPhotoDone,
+    clientPhoto:$author$project$State$ClientPhotoUpload,clientPhotoDone:$author$project$State$ClientPhotoDone,photoRefresh:$author$project$State$ClientProfileRefresh,
     convertClient:$author$project$State$ConvertClicked,convertDone:$author$project$State$ConvertDone,
     validation:$author$project$Validation$feature,passwordError:$author$project$Validation$passwordError,
     emptyDict:$elm$core$Dict$empty,dict:$elm$core$Dict$fromList,
@@ -378,6 +378,30 @@ try {
     assert.equal(failed.clientPhotoBusy,false);
     assert.equal(failed.clientPhotoFile,original.clientPhotoFile);
     assert.match(failed.clientPhotoError,/PNG or JPEG/);
+  });
+  test('photo upload completion survives unrelated panel search and preserves drafts',()=>{
+    const original={...initial('/clients/4'),clientPhotoFile:{$:'Just',a:{}}};
+    const started=update(e.clientPhoto(4),original);
+    const completion=response(started,result=>e.A2(e.clientPhotoDone,4,result),e.json({message:'Uploaded for scanning'}));
+    const searched=update(e.featureSearch('new search'),started);
+    const draft={...searched,formDirty:true,noteDraft:'Keep my note'};
+    const finished=update(completion,draft);
+    assert.equal(finished.clientPhotoBusy,false);
+    assert.equal(finished.clientPhotoFile.$,'Nothing');
+    assert.equal(finished.formDirty,true);
+    assert.equal(finished.noteDraft,'Keep my note');
+    assert.equal(finished.clientPhotoNotice,'Uploaded for scanning');
+  });
+  test('photo profile responses survive panel changes but reject older refreshes and navigation',()=>{
+    const original=initial('/clients/4');
+    const photo=e.json({photo:{documentId:8,scanStatus:'Clean'}});
+    const pending=response(original,e.clientProfile,photo);
+    const searched=update(e.featureSearch('other panel query'),original);
+    assert.equal(update(pending,searched).clientProfile,photo);
+    const refreshed=update(e.photoRefresh(4),searched);
+    assert.equal(update(pending,refreshed),refreshed);
+    const moved=update(e.navigate(e.url('http://ecc.test/clients/5').a),original);
+    assert.equal(update(pending,moved),moved);
   });
   test('logout clears client photo data and rejects previously requested client photo data',()=>{
     const original={...initial('/clients/4'),clientProfile:e.json({photo:{documentId:8,scanStatus:'Clean'}})};
